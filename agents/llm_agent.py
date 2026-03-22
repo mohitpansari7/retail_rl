@@ -168,8 +168,18 @@ class RetailTools:
         state = self._get_state()
         category_demands = state.get("demand_history", {}).get(category, [1.0]*7)
 
+        # Guard: polyfit needs at least 2 points — fall back to flat if empty
+        if not category_demands:
+            category_demands = [1.0] * 7
+
         recent = np.array(category_demands[-7:], dtype=float)
-        trend  = float(np.polyfit(range(len(recent)), recent, 1)[0])
+
+        # Need at least 2 points for a trend line
+        if len(recent) < 2:
+            trend = 0.0
+        else:
+            trend = float(np.polyfit(range(len(recent)), recent, 1)[0])
+
         mean   = float(recent.mean())
         cv     = float(recent.std() / (mean + 1e-8))
 

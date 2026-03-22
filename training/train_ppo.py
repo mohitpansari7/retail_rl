@@ -90,9 +90,15 @@ def train(
             next_obs, reward, terminated, truncated, info = env.step(action)
             done = terminated or truncated
 
+            # ── Normalise reward to [-10, +10] range for stable critic learning.
+            # Per-step rewards are ~₹3M (price × units × n_skus).
+            # Dividing by 1e7 brings one step to ~0.3, one episode to ~9.
+            # V loss should then be O(1) — critic learns properly.
+            reward_scaled = float(np.clip(reward / 1e7, -10.0, 10.0))
+
             # ── Store (pass done so GAE handles episode boundaries)
-            agent.store_transition(action, reward, done=done)
-            ep_reward += reward
+            agent.store_transition(action, reward_scaled, done=done)
+            ep_reward += reward  # track raw ₹ for reporting
 
             # ── Handle episode end
             if done:

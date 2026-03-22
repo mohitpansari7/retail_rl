@@ -160,14 +160,16 @@ def train(
             agent.update_env_state(env_state)
 
             # ── Store transition with augmented obs
+            # Scale reward same as PPO: /1e7 + clip to prevent critic explosion
+            joint_reward_scaled = float(np.clip(joint_reward / 1e7, -10.0, 10.0))
             agent.store_transition(
                 local_obs=obs,
                 actions=actions,
                 global_state=env.get_global_state(),
-                joint_reward=joint_reward,
+                joint_reward=joint_reward_scaled,
                 done=done,
             )
-            ep_reward += joint_reward
+            ep_reward += joint_reward  # track raw for reporting
 
             # ── Handle episode end
             if done:
